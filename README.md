@@ -82,3 +82,29 @@ Compile and run:
 ```
 
 ## Project Structure
+
+```
+pcl-lang/
+├── src/
+│   ├── lexer.mll          # Lexical analyzer (ocamllex)
+│   ├── parser.mly         # Syntax analyzer (ocamlyacc)
+│   ├── semantic.ml        # Semantic analysis
+│   ├── codegen.ml         # Code generation
+│   └── main.ml            # Entry point
+├── test/
+│   ├── hello.pcl
+│   ├── primes.pcl
+│   └── ...
+├── Makefile
+└── README.md
+```
+
+## Author
+
+[Your Name]
+
+## Course
+
+NTUA Electrical & Computer Engineering School
+Compilers Course (2026)
+Instructor: Κωστής Σαγώνας
