@@ -108,4 +108,4 @@ Sotiris Gkiouleas
 
 NTUA Electrical & Computer Engineering School
 Compilers Course (2026)
-Instructor: Κωστής Σαγώνας
+Instructor: Kostis Sagonas
