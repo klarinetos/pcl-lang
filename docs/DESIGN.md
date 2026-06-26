@@ -19,8 +19,8 @@
 
 ## Current Phase
 
-- [x] Lexer (complete)
-- [ ] Parser (in progress)
+- [ ] Lexer (in progress)
+- [ ] Parser
 - [ ] Semantic analysis
 - [ ] Intermediate code
 - [ ] Code generation
