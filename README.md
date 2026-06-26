@@ -99,9 +99,10 @@ pcl-lang/
 └── README.md
 ```
 
-## Author
+## Authors
 
-[Your Name]
+Anna Eirini Anagnostopoulou
+Sotiris Gkiouleas
 
 ## Course
 
