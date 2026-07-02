@@ -9,25 +9,32 @@ TODOs.
 
 ## Phase 1: Lexical Analysis (0.5 units)
 
-**Status:** Not started
+**Status:** Done (`src/lexer.mll`, `src/parser.mly` token declarations, `src/main.ml` as a
+temporary token-printing driver). Built and tested via OCaml 4.14.1 in WSL Ubuntu — verified
+all 6 `test/*.pcl` files tokenize cleanly to `EOF`, plus manual checks of non-nesting
+comments, escape sequences (incl. `\0`), real-number exponents, case-sensitive
+keywords-vs-identifiers, multi-char operators (`<>` `>=` `<=`), and error paths (invalid
+character, unterminated string, unterminated comment — all report line number and exit 1).
+Also fixed a real Makefile bug found in the process: no rule built `parser.cmi` from
+`parser.mli` before it was needed, so nothing downstream of the parser could compile.
 
 **Description:** 
 Tokenize PCL source code into lexical units (keywords, identifiers, constants, operators, delimiters).
 
 **Deliverables:**
-- [ ] Implement lexer using ocamllex (lexer.mll)
-- [ ] Recognize all token types:
-  - [ ] Keywords (and, array, begin, boolean, etc.)
-  - [ ] Identifiers
-  - [ ] Integer constants
-  - [ ] Real constants
-  - [ ] Character constants
-  - [ ] String literals
-  - [ ] Operators (=, >, <, :=, etc.)
-  - [ ] Delimiters ((, ), [, ], ;, :, etc.)
-- [ ] Handle comments `(* ... *)`
-- [ ] Handle whitespace correctly
-- [ ] Test with simple examples
+- [x] Implement lexer using ocamllex (lexer.mll)
+- [x] Recognize all token types:
+  - [x] Keywords (and, array, begin, boolean, etc.)
+  - [x] Identifiers
+  - [x] Integer constants
+  - [x] Real constants
+  - [x] Character constants
+  - [x] String literals
+  - [x] Operators (=, >, <, :=, etc.)
+  - [x] Delimiters ((, ), [, ], ;, :, etc.)
+- [x] Handle comments `(* ... *)`
+- [x] Handle whitespace correctly
+- [x] Test with simple examples
 
 **Test Files:**
 - `hello.pcl` — simple string output
@@ -258,11 +265,11 @@ and `-f`/default `.asm` output only work once Phase 6 exists.
 
 ## Overall Progress
 
-**Current Phase:** Not started
+**Current Phase:** Phase 1 done, Phase 2 (Syntactic Analysis) next
 
 **Blockers:** None yet
 
 **Next Steps:**
-1. Set up OCaml project structure
-2. Write lexer (ocamllex)
-3. Design and write parser (ocamlyacc)
+1. Define AST types (Phase 2)
+2. Write the real grammar in `src/parser.mly` (ocamlyacc), replacing the placeholder rule
+3. Wire `main.ml` into the actual CLI contract (SPEC.md §9) once parsing exists

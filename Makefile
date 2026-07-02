@@ -20,6 +20,7 @@ PARSER_MLI = $(SRCDIR)/parser.mli
 
 # Object files
 OBJS = $(SRCDIR)/parser.cmx $(SRCDIR)/lexer.cmx $(SRCDIR)/semantic.cmx $(SRCDIR)/codegen.cmx $(SRCDIR)/main.cmx
+PARSER_CMI = $(SRCDIR)/parser.cmi
 
 # Executable
 EXECUTABLE = pclc
@@ -37,7 +38,7 @@ $(LEXER_ML): $(LEXER) $(PARSER_MLI)
 $(PARSER_ML) $(PARSER_MLI): $(PARSER)
 	$(OCAMLYACC) -v -b $(SRCDIR)/parser $<
 
-$(SRCDIR)/main.cmx: $(SRCDIR)/main.ml $(PARSER_MLI) $(LEXER_ML)
+$(SRCDIR)/main.cmx: $(SRCDIR)/main.ml $(PARSER_CMI) $(LEXER_ML)
 	$(OCAMLOPT) $(FLAGS) -c -I $(SRCDIR) -o $@ $<
 
 $(SRCDIR)/semantic.cmx: $(SRCDIR)/semantic.ml
@@ -46,10 +47,13 @@ $(SRCDIR)/semantic.cmx: $(SRCDIR)/semantic.ml
 $(SRCDIR)/codegen.cmx: $(SRCDIR)/codegen.ml
 	$(OCAMLOPT) $(FLAGS) -c -I $(SRCDIR) -o $@ $<
 
-$(SRCDIR)/parser.cmx: $(PARSER_ML)
+$(PARSER_CMI): $(PARSER_MLI)
 	$(OCAMLOPT) $(FLAGS) -c -I $(SRCDIR) -o $@ $<
 
-$(SRCDIR)/lexer.cmx: $(LEXER_ML) $(PARSER_MLI)
+$(SRCDIR)/parser.cmx: $(PARSER_ML) $(PARSER_CMI)
+	$(OCAMLOPT) $(FLAGS) -c -I $(SRCDIR) -o $@ $<
+
+$(SRCDIR)/lexer.cmx: $(LEXER_ML) $(PARSER_CMI)
 	$(OCAMLOPT) $(FLAGS) -c -I $(SRCDIR) -o $@ $<
 
 clean:
