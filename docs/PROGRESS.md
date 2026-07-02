@@ -1,6 +1,11 @@
-# Compiler Phases Progress
+# Compiler Progress
 
-Track completion of each compiler phase and major milestones.
+Track completion of each compiler phase and major milestones. Everything about the PCL
+*language* (lexical rules, grammar, types, semantics, stdlib, CLI/build contract) is in
+[SPEC.md](SPEC.md); our own toolchain/pipeline decisions are in
+[IMPLEMENTATION.md](IMPLEMENTATION.md) — don't duplicate either here. This file is about
+*status*: progress per phase, cross-cutting deliverables (CLI/build), known issues, and
+TODOs.
 
 ## Phase 1: Lexical Analysis (0.5 units)
 
@@ -63,7 +68,7 @@ Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
 - `hanoi.pcl` — recursion, string parameters
 
 **Notes:**
-- Operator precedence is critical (@ > ^ > +/- > * / div mod > + - > comparisons)
+- Operator precedence/associativity: [SPEC.md §2.3](SPEC.md#23-operator-precedence-and-associativity)
 - If/then/else has shift/reduce ambiguity (prefer longest match)
 
 ---
@@ -76,8 +81,9 @@ Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
 Validate semantic correctness: type checking, scope rules, symbol table management, declaration validation.
 
 **Deliverables:**
-- [ ] Implement symbol table:
-  - [ ] Track symbol: name, type, scope_level, is_parameter, etc.
+- [ ] Design + implement symbol table — data structure and tracked fields are **not
+  specified by the course** ([SPEC.md §4](SPEC.md#4-program-structure)); ask the user
+  before settling on an approach
   - [ ] Support nested scopes (enter/exit scope)
   - [ ] Lookup with scope traversal
 - [ ] Type checking:
@@ -107,11 +113,12 @@ Validate semantic correctness: type checking, scope rules, symbol table manageme
 **Test Files:**
 - All previous files
 - `reverse.pcl` — arrays, string manipulation
-- `bubble_sort.pcl` — array operations
+- `bsort.pcl` — array operations
 
 **Notes:**
 - Single-pass semantic analysis preferred
 - Collect errors but continue analysis (report all errors at once)
+- Assignment compatibility / coercion rules: [SPEC.md §7](SPEC.md#7-type-coercion--assignment-compatibility)
 
 ---
 
@@ -146,7 +153,7 @@ Generate Three-Address Code (TAC) from the validated AST.
 - `mean.pcl` — arithmetic, temporary variables
 
 **Notes:**
-- TAC format: `label: op arg1, arg2, result`
+- Required TAC output format: [SPEC.md §9](SPEC.md#9-cli--build--output-requirements) (`printf`-style quadruples)
 - Temps are typically `t0, t1, t2, ...`
 - Must handle nested expressions correctly
 
@@ -197,6 +204,42 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 - x86-64 calling convention: rdi, rsi, rdx, rcx, r8, r9 for args
 - Return value in rax
 - Must preserve caller-saved registers
+- Required final-code output format: [SPEC.md §9](SPEC.md#9-cli--build--output-requirements) (tab-indented `label: instr arg1, arg2`)
+
+---
+
+## CLI & Build Contract
+
+Full detail: [SPEC.md §9](SPEC.md#9-cli--build--output-requirements). Not tied to one phase
+above — argument parsing can be scaffolded early, but `-i` only works once Phase 4 exists
+and `-f`/default `.asm` output only work once Phase 6 exists.
+
+**Deliverables:**
+- [ ] `pclc <file>` — default mode, writes `<basename>.imm` and `<basename>.asm` next to the source
+- [ ] `-o file` — custom executable output path (default `./a.out`)
+- [ ] `-O` — optimization flag (optional, accepted even before Phase 5 exists)
+- [ ] `-f` — read source from stdin, write final code to stdout
+- [ ] `-i` — read source from stdin, write intermediate code to stdout
+- [ ] `pclc` exit code: 0 on success, non-zero on any compile failure
+- [ ] Generated executable exit code: 0 on successful run (verify: `./a.out && ./a.out` on `hello.pcl` prints the greeting twice)
+- [ ] `make` — builds `pclc`
+- [ ] `make clean` — removes generated files (flex/bison output, `.o`), keeps `pclc`
+- [ ] `make distclean` — `make clean` + removes `pclc`
+
+---
+
+## Known Issues
+
+- `README.md` has stale/inaccurate setup instructions (references flex/bison, which this
+  project doesn't use — it's ocamllex/ocamlyacc per IMPLEMENTATION.md). Low priority while
+  there's no `src/` yet, but the PDF (§4) requires README to have accurate install/usage
+  instructions since that's what the instructor reads — rewrite it for real once the build
+  actually works, don't just patch the current placeholder.
+
+## TODOs
+
+- Optimize tail recursion
+- Better error messages
 
 ---
 
@@ -208,7 +251,7 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 | primes.pcl | Not started | Functions, loops, logic |
 | hanoi.pcl | Not started | Recursion, strings |
 | reverse.pcl | Not started | Arrays, strings |
-| bubble_sort.pcl | Not started | Array manipulation |
+| bsort.pcl | Not started | Array manipulation |
 | mean.pcl | Not started | Reals, arithmetic |
 
 ---
@@ -216,14 +259,6 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 ## Overall Progress
 
 **Current Phase:** Not started
-
-**Estimated Completion:**
-- Lexer: Week 2
-- Parser: Week 3
-- Semantic: Week 4
-- Intermediate Code: Week 5
-- Code Generation: Week 6
-- Testing/Polish: Week 7+
 
 **Blockers:** None yet
 
