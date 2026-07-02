@@ -23,3 +23,11 @@ has not been decided.** Don't design or implement it unilaterally — ask the us
 the note in `docs/SPEC.md` §4.
 
 **Don't ask the user for context.** It's in the docs.
+
+**After doing substantive implementation work** (a new phase, a significant chunk of a
+phase, a nontrivial bugfix), write a step-by-step walkthrough into `guide/` explaining what
+was built and why — see `guide/LEXER_WALKTHROUGH.md` for the shape/depth expected (what the
+files are for, how the mechanism actually works, what was verified and how, what's still a
+placeholder). These are human-facing explainers, not part of the SPEC/IMPLEMENTATION/
+PROGRESS context set — don't add them to the required-reading list above, and don't expect
+them to stay in sync with later changes automatically.
