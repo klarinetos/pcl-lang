@@ -9,3 +9,4 @@ pclc
 *.imm
 *.asm
 a.out
+.claude/
