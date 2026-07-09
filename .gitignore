@@ -6,6 +6,7 @@ src/*.cmi
 src/*.cmx
 src/*.o
 pclc
+pcli
 *.imm
 *.asm
 a.out
