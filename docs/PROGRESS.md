@@ -48,26 +48,38 @@ Tokenize PCL source code into lexical units (keywords, identifiers, constants, o
 
 ## Phase 2: Syntactic Analysis (1.0 units)
 
-**Status:** Not started
+**Status:** Done (`src/ast.ml`, real grammar in `src/parser.mly`, `src/main.ml` rewritten to
+parse-and-print-the-AST). Built and tested via OCaml 4.14.1 in WSL Ubuntu — all 6
+`test/*.pcl` files parse successfully; manually verified operator precedence/associativity
+(`2 + 3 * 4`, explicit parens, array indexing binding tightest), dangling-else resolution
+(nested `if`/`if`/`else` correctly attaches `else` to the inner `if`), forward declarations
+with mutual recursion, both forms of `new`/`dispose`, `label`/`goto`, and syntax-error
+reporting (line number + exit 1). One design decision made along the way: `lvalue` is a
+grammar rule distinct from the general `expr` rule (matching SPEC.md §5's l-value/r-value
+split) so invalid assignment targets are rejected at parse time, not deferred to semantic
+analysis — except `@`'s operand, which had to be loosened to general `expr` to avoid an
+unavoidable LALR(1) reduce/reduce conflict with the `expr : lvalue` passthrough; "the
+operand of `@` must be an lvalue" is therefore one check Phase 3 has to make instead (see
+the comment above the `lvalue` rule in `parser.mly`).
 
 **Description:**
 Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
 
 **Deliverables:**
-- [ ] Define OCaml AST types:
-  - [ ] Expression types (IntConst, BinOp, FuncCall, etc.)
-  - [ ] Statement types (Assign, If, While, Block, etc.)
-  - [ ] Type definition types
-  - [ ] Program/body structures
-- [ ] Implement parser using ocamlyacc (parser.mly)
-- [ ] Handle operator precedence correctly (Table 2)
-- [ ] Handle operator associativity (left-associative by default)
-- [ ] Parse all statement types
-- [ ] Parse all expression types
-- [ ] Parse procedure/function declarations
-- [ ] Handle forward declarations for recursive functions
-- [ ] Generate AST from valid PCL programs
-- [ ] Produce useful error messages for syntax errors
+- [x] Define OCaml AST types:
+  - [x] Expression types (IntConst, BinOp, FuncCall, etc.)
+  - [x] Statement types (Assign, If, While, Block, etc.)
+  - [x] Type definition types
+  - [x] Program/body structures
+- [x] Implement parser using ocamlyacc (parser.mly)
+- [x] Handle operator precedence correctly (Table 2)
+- [x] Handle operator associativity (left-associative by default)
+- [x] Parse all statement types
+- [x] Parse all expression types
+- [x] Parse procedure/function declarations
+- [x] Handle forward declarations for recursive functions
+- [x] Generate AST from valid PCL programs
+- [x] Produce useful error messages for syntax errors
 
 **Test Files:**
 - `hello.pcl`
@@ -76,7 +88,12 @@ Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
 
 **Notes:**
 - Operator precedence/associativity: [SPEC.md §2.3](SPEC.md#23-operator-precedence-and-associativity)
-- If/then/else has shift/reduce ambiguity (prefer longest match)
+- If/then/else has shift/reduce ambiguity (prefer longest match) — resolved via
+  `%nonassoc THEN` / `%nonassoc ELSE` precedence, not left as an unresolved conflict
+- `and`/`or` bind *tighter* than relational operators in PCL (a real Pascal quirk, unlike
+  C) — combining a comparison with `and`/`or` requires explicit parens around the
+  comparison, e.g. `(a < b) and (c < d)`, which is exactly how the course's own test files
+  (`primes.pcl`) already write it
 
 ---
 
@@ -238,10 +255,11 @@ and `-f`/default `.asm` output only work once Phase 6 exists.
 ## Known Issues
 
 - `README.md` has stale/inaccurate setup instructions (references flex/bison, which this
-  project doesn't use — it's ocamllex/ocamlyacc per IMPLEMENTATION.md). Low priority while
-  there's no `src/` yet, but the PDF (§4) requires README to have accurate install/usage
-  instructions since that's what the instructor reads — rewrite it for real once the build
-  actually works, don't just patch the current placeholder.
+  project doesn't use — it's ocamllex/ocamlyacc per IMPLEMENTATION.md). The build actually
+  works now (Phases 1-2 done, `make && ./pclc test/hello.pcl` runs), so this is no longer
+  low priority — the PDF (§4) requires README to have accurate install/usage instructions
+  since that's what the instructor reads. Worth fixing for real soon, not just patching the
+  current placeholder.
 
 ## TODOs
 
@@ -265,11 +283,12 @@ and `-f`/default `.asm` output only work once Phase 6 exists.
 
 ## Overall Progress
 
-**Current Phase:** Phase 1 done, Phase 2 (Syntactic Analysis) next
+**Current Phase:** Phase 1-2 done, Phase 3 (Semantic Analysis) next
 
-**Blockers:** None yet
+**Blockers:** Symbol table design still needs deciding with the user before Phase 3 starts
+(see `docs/SPEC.md` §4 note and `CLAUDE.md`)
 
 **Next Steps:**
-1. Define AST types (Phase 2)
-2. Write the real grammar in `src/parser.mly` (ocamlyacc), replacing the placeholder rule
-3. Wire `main.ml` into the actual CLI contract (SPEC.md §9) once parsing exists
+1. Decide symbol table design (ask the user first — not specified by the course)
+2. Implement semantic analysis: type checking, scope rules, symbol table (Phase 3)
+3. Wire `main.ml` into the actual CLI contract (SPEC.md §9) once semantic analysis + codegen exist
