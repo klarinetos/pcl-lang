@@ -232,6 +232,30 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 
 ---
 
+## Interpreter (side project, not a graded phase)
+
+**Status:** Done on the `interpreter` branch (not merged to `main`) — `src/interp.ml` +
+`src/interp_main.ml`, a new `pcli` executable built alongside `pclc`. Runs the Phase 2 AST
+directly: independent of semantic analysis and codegen, and independent of the
+still-undecided symbol table design above (the interpreter's runtime environment serves a
+different purpose — looking up live values during execution, not static type-checking).
+Verified against all 6 `test/*.pcl` files with real output checking, not just exit codes
+(e.g. `hanoi.pcl`'s move sequence hand-verified against the known-correct solution,
+`primes.pcl`'s count cross-checked), plus synthetic tests for everything the course examples
+don't exercise: forward declarations with genuine mutual recursion, `new`/`dispose` for
+scalars and dynamic arrays, `label`/`goto`, address-of on a specific array element, by-value
+vs. by-reference side by side, short-circuit `and`/`or`, lexical vs. dynamic scoping, and
+three runtime error paths. Full writeup: `guide/INTERP_WALKTHROUGH.md`.
+
+Also surfaced a real discrepancy in the course PDF itself while testing `mean.pcl`: the PDF
+claims the printed mean should diverge further from the theoretical `(n-1)/2` as `k` grows,
+but independently re-simulating the exact recurrence (outside the interpreter, as a
+cross-check) shows the opposite — it converges *closer* to the theoretical value as `k`
+increases. Not an interpreter bug; flagged as an open question about the PDF's own claim,
+not resolved.
+
+---
+
 ## CLI & Build Contract
 
 Full detail: [SPEC.md §9](SPEC.md#9-cli--build--output-requirements). Not tied to one phase
