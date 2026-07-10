@@ -94,6 +94,14 @@ Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
   C) — combining a comparison with `and`/`or` requires explicit parens around the
   comparison, e.g. `(a < b) and (c < d)`, which is exactly how the course's own test files
   (`primes.pcl`) already write it
+- Extra verification beyond parsing alone: a tree-walking interpreter was built on a separate
+  `interpreter` branch (not merged into `main` — it isn't part of the graded pipeline)
+  specifically to run the Phase 1 lexer and Phase 2 parser's output end-to-end and check
+  real program behavior, not just "it parsed." All 6 `test/*.pcl` files ran successfully and
+  produced correct, independently-verified output (e.g. `hanoi.pcl`'s move sequence matched
+  a known-correct solution, `primes.pcl`'s prime count was correct) — a stronger check than
+  Phase 1/2 testing alone gave, since a wrong token or a misparsed precedence would likely
+  have shown up as wrong program behavior there.
 
 ---
 
