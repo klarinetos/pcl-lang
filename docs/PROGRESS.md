@@ -234,6 +234,13 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 
 ## Interpreter (side project, not a graded phase)
 
+Beyond being useful on its own, this doubled as real-world verification that the Phase 1
+lexer and Phase 2 parser actually work correctly on genuine PCL programs — running all 6
+`test/*.pcl` files end-to-end and checking their *actual output* (not just "it parsed without
+error") is a stronger check than anything Phase 1/2 testing did on their own, since a wrong
+token or a misparsed precedence would very likely have shown up as wrong program behavior
+here, not just a clean-looking parse tree.
+
 **Status:** Done on the `interpreter` branch (not merged to `main`) — `src/interp.ml` +
 `src/interp_main.ml`, a new `pcli` executable built alongside `pclc`. Runs the Phase 2 AST
 directly: independent of semantic analysis and codegen, and independent of the
