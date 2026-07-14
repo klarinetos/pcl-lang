@@ -272,6 +272,41 @@ Generate x86-64 assembly code from intermediate code (or LLVM IR).
 
 ---
 
+## Interpreter (side project, not a graded phase)
+
+Beyond being useful on its own, this doubled as real-world verification that the compiler
+frontend actually works correctly on genuine PCL programs — running all 6 `test/*.pcl` files
+end-to-end and checking their *actual output* (not just "it compiled without error") is a
+stronger check than phase-level testing alone gives, since a wrong token, a misparsed
+precedence, or an overly-permissive/overly-strict semantic check would very likely show up as
+wrong program behavior here, not just a clean-looking parse tree or a silent pass.
+
+There are two interpreter branches, in sequence:
+- **`interpreter-phase1-2`** (formerly `interpreter`, renamed to make room for the second one)
+  — verified Phases 1-2 (lexer + parser) by running the raw AST directly, before semantic
+  analysis existed.
+- **`interpreter-phase3`** — same interpreter, ported to the Phase 3 AST (line-number-carrying
+  statements/headers/var-groups) and, unlike the first one, run *after*
+  `Semantic.check_program` — closing the gap the first interpreter's own walkthrough explicitly
+  flagged as not done ("No semantic analysis has run first"). This is real end-to-end
+  verification of Phase 3, not just Phases 1-2: `pcli` now parses, semantic-checks, and only
+  executes if the check passes — the same gate `pclc` itself applies.
+
+**Status:** Done on `interpreter-phase3` (neither branch is merged to `main`) —
+`src/interp.ml` + `src/interp_main.ml`, the `pcli` executable built alongside `pclc`. Verified
+against all 6 `test/*.pcl` files with real output checking, not just exit codes (e.g.
+`hanoi.pcl`'s move sequence hand-verified against the known-correct solution, `primes.pcl`'s
+count cross-checked, `mean.pcl` hand-computed from the seed recurrence for a small case), plus
+synthetic tests for everything the course examples don't exercise: forward declarations with
+genuine mutual recursion, `new`/`dispose` for scalars and dynamic arrays, `label`/`goto`,
+address-of on a specific array element, by-value vs. by-reference side by side, short-circuit
+`and`/`or`, three runtime error paths (division by zero, array-index-out-of-bounds, nil-pointer
+dereference), and — new on this branch — confirmation that `pcli` rejects an ill-typed program
+outright (reporting all its semantic errors, same as `pclc` would) instead of attempting to run
+it. Full writeup: `guide/INTERP_WALKTHROUGH.md`.
+
+---
+
 ## CLI & Build Contract
 
 Full detail: [SPEC.md §9](SPEC.md#9-cli--build--output-requirements). Not tied to one phase
