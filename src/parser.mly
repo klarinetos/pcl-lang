@@ -1,5 +1,11 @@
 %{
   open Ast
+
+  (* Line of the first token of the rule currently being reduced. Relies on
+     Lexer.token calling Lexing.new_line on every '\n' it consumes, which is
+     what lets Parsing's automatic position tracking report real line
+     numbers instead of a constant 1. *)
+  let curline () = (Parsing.symbol_start_pos ()).Lexing.pos_lnum
 %}
 
 %token <string> ID
@@ -54,7 +60,7 @@ locals:
 
 local:
   VAR var_groups           { LVar $2 }
-  | LABEL id_list SEMI     { LLabel $2 }
+  | LABEL id_list SEMI     { LLabel (curline (), $2) }
   | header SEMI body SEMI  { LSub { shdr = $1; sbody = $3 } }
   | FORWARD header SEMI    { LForward $2 }
 ;
@@ -65,7 +71,7 @@ var_groups:
 ;
 
 var_group:
-  id_list COLON typ SEMI   { ($1, $3) }
+  id_list COLON typ SEMI   { { vline = curline (); vnames = $1; vtyp = $3 } }
 ;
 
 id_list:
@@ -74,8 +80,10 @@ id_list:
 ;
 
 header:
-  PROCEDURE ID LPAREN formals RPAREN               { { hname = $2; hparams = $4; hret = None } }
-  | FUNCTION ID LPAREN formals RPAREN COLON typ     { { hname = $2; hparams = $4; hret = Some $7 } }
+  PROCEDURE ID LPAREN formals RPAREN
+      { { hline = curline (); hname = $2; hparams = $4; hret = None } }
+  | FUNCTION ID LPAREN formals RPAREN COLON typ
+      { { hline = curline (); hname = $2; hparams = $4; hret = Some $7 } }
 ;
 
 formals:
@@ -113,20 +121,20 @@ stmts:
 ;
 
 stmt:
-  /* empty */                       { SEmpty }
-  | lvalue ASSIGN expr              { SAssign ($1, $3) }
-  | block                          { SBlock $1 }
-  | call                          { let (f, args) = $1 in SCall (f, args) }
-  | IF expr THEN stmt %prec THEN   { SIf ($2, $4, None) }
-  | IF expr THEN stmt ELSE stmt    { SIf ($2, $4, Some $6) }
-  | WHILE expr DO stmt             { SWhile ($2, $4) }
-  | ID COLON stmt                  { SLabel ($1, $3) }
-  | GOTO ID                        { SGoto $2 }
-  | RETURN                         { SReturn }
-  | NEW lvalue                     { SNew (None, $2) }
-  | NEW LBRACKET expr RBRACKET lvalue  { SNew (Some $3, $5) }
-  | DISPOSE lvalue                 { SDispose (false, $2) }
-  | DISPOSE LBRACKET RBRACKET lvalue   { SDispose (true, $4) }
+  /* empty */                       { { sline = curline (); sdesc = SEmpty } }
+  | lvalue ASSIGN expr              { { sline = curline (); sdesc = SAssign ($1, $3) } }
+  | block                          { { sline = curline (); sdesc = SBlock $1 } }
+  | call                          { let (f, args) = $1 in { sline = curline (); sdesc = SCall (f, args) } }
+  | IF expr THEN stmt %prec THEN   { { sline = curline (); sdesc = SIf ($2, $4, None) } }
+  | IF expr THEN stmt ELSE stmt    { { sline = curline (); sdesc = SIf ($2, $4, Some $6) } }
+  | WHILE expr DO stmt             { { sline = curline (); sdesc = SWhile ($2, $4) } }
+  | ID COLON stmt                  { { sline = curline (); sdesc = SLabel ($1, $3) } }
+  | GOTO ID                        { { sline = curline (); sdesc = SGoto $2 } }
+  | RETURN                         { { sline = curline (); sdesc = SReturn } }
+  | NEW lvalue                     { { sline = curline (); sdesc = SNew (None, $2) } }
+  | NEW LBRACKET expr RBRACKET lvalue  { { sline = curline (); sdesc = SNew (Some $3, $5) } }
+  | DISPOSE lvalue                 { { sline = curline (); sdesc = SDispose (false, $2) } }
+  | DISPOSE LBRACKET RBRACKET lvalue   { { sline = curline (); sdesc = SDispose (true, $4) } }
 ;
 
 /* Restricted per SPEC.md §5.1: only these forms may be assignment targets,

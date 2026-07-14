@@ -58,7 +58,7 @@ let string_of_header h =
 
 let rec print_stmt indent s =
   let pad = String.make indent ' ' in
-  match s with
+  match s.sdesc with
   | SEmpty -> Printf.printf "%s<empty>\n" pad
   | SAssign (l, e) -> Printf.printf "%s%s := %s\n" pad (string_of_expr l) (string_of_expr e)
   | SBlock stmts ->
@@ -95,10 +95,10 @@ let rec print_local indent l =
   match l with
   | LVar groups ->
       List.iter
-        (fun (names, t) ->
-          Printf.printf "%svar %s : %s\n" pad (String.concat ", " names) (string_of_typ t))
+        (fun g ->
+          Printf.printf "%svar %s : %s\n" pad (String.concat ", " g.vnames) (string_of_typ g.vtyp))
         groups
-  | LLabel names -> Printf.printf "%slabel %s\n" pad (String.concat ", " names)
+  | LLabel (_, names) -> Printf.printf "%slabel %s\n" pad (String.concat ", " names)
   | LForward h -> Printf.printf "%sforward %s\n" pad (string_of_header h)
   | LSub sub ->
       Printf.printf "%s%s\n" pad (string_of_header sub.shdr);
@@ -126,6 +126,14 @@ let () =
   try
     let ast = Parser.program Lexer.token lexbuf in
     close_in ic;
+    let errors = Semantic.check_program ast in
+    let errors = List.sort (fun a b -> compare a.Semantic.line b.Semantic.line) errors in
+    if errors <> [] then begin
+      List.iter
+        (fun (e : Semantic.error) -> Printf.eprintf "%s: line %d: %s\n" filename e.line e.msg)
+        errors;
+      exit 1
+    end;
     print_program ast
   with
   | Lexer.Lex_error msg ->

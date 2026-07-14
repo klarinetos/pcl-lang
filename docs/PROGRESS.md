@@ -107,40 +107,66 @@ Parse token stream into an Abstract Syntax Tree (AST) according to PCL grammar.
 
 ## Phase 3: Semantic Analysis (2.0 units)
 
-**Status:** Not started
+**Status:** Done (`src/symtab.ml`, `src/semantic.ml`, plus line-number tracking retrofitted
+into `src/ast.ml`/`src/parser.mly`/`src/lexer.mll` since the AST previously carried none).
+Built and tested via OCaml 4.14.1 in WSL Ubuntu — all 6 `test/*.pcl` files type-check cleanly
+(exit 0); scratch test files (written, verified, then deleted — not left in `test/`, which
+SPEC.md §10 reserves for the course's mirrored examples) confirmed multi-error collection (7
+distinct errors from one file, all correctly reported together), duplicate declarations,
+unfulfilled `forward` declarations, label declared-but-undefined and defined-twice, undeclared
+`goto` targets, mutual recursion via `forward`, both directions of `^array[n] of t` /
+`^array of t` pointer widening (correct direction accepted, wrong direction rejected), and
+`array [0] of t` / array-returning-function rejection. See `guide/SEMANTIC_WALKTHROUGH.md` for
+the full walkthrough.
+
+Two design decisions were asked of the user before implementing, per CLAUDE.md/SPEC.md §4's
+explicit "ask first" note:
+1. Symbol table: a mutable stack of hash tables (one per open scope), not a persistent/
+   functional environment.
+2. Symbol table entries carry only what Phase 3 itself needs (type, by-ref flag, forward/
+   defined flag) — no storage/offset fields reserved for Phase 4/6 ahead of time.
+
+A third question surfaced while reading the existing code (not originally about the symbol
+table): the AST had no line numbers anywhere, so semantic errors would have had nowhere to
+point. Asked whether to retrofit line tracking now; the answer was yes — `Ast.stmt` became a
+`{ sline; sdesc }` record (statement-granularity, not per-expression), `header` gained an
+`hline`, and `LVar`'s groups became `var_group` records with their own `vline`. Getting real
+line numbers out of `ocamlyacc` needed one small fix in the already-"done" `lexer.mll`: it
+tracked its own line counter in a plain `ref` but never called `Lexing.new_line`, which is what
+`Parsing.symbol_start_pos()`'s line-number field actually depends on.
 
 **Description:**
 Validate semantic correctness: type checking, scope rules, symbol table management, declaration validation.
 
 **Deliverables:**
-- [ ] Design + implement symbol table — data structure and tracked fields are **not
+- [x] Design + implement symbol table — data structure and tracked fields are **not
   specified by the course** ([SPEC.md §4](SPEC.md#4-program-structure)); ask the user
   before settling on an approach
-  - [ ] Support nested scopes (enter/exit scope)
-  - [ ] Lookup with scope traversal
-- [ ] Type checking:
-  - [ ] Validate variable declarations (complete types only)
-  - [ ] Check assignment compatibility
-  - [ ] Validate operator operand types
-  - [ ] Check function return types
-  - [ ] Handle type coercion (integer → real)
-  - [ ] Handle array type compatibility
-  - [ ] Handle pointer type compatibility
-- [ ] Function/procedure validation:
-  - [ ] Check parameter count and types
-  - [ ] Validate formal vs actual parameter compatibility
-  - [ ] Check pass-by-value vs pass-by-reference
-  - [ ] Validate forward declarations
-  - [ ] Check for undefined functions
-- [ ] Variable validation:
-  - [ ] Detect undefined variable usage
-  - [ ] Detect duplicate declarations in same scope
-  - [ ] Validate array bounds (known size)
-  - [ ] Check pointer dereference
-- [ ] Scope validation:
-  - [ ] Enforce Pascal scoping rules
-  - [ ] Allow shadowing in nested scopes
-  - [ ] Validate label declarations
+  - [x] Support nested scopes (enter/exit scope)
+  - [x] Lookup with scope traversal
+- [x] Type checking:
+  - [x] Validate variable declarations (complete types only)
+  - [x] Check assignment compatibility
+  - [x] Validate operator operand types
+  - [x] Check function return types
+  - [x] Handle type coercion (integer → real)
+  - [x] Handle array type compatibility
+  - [x] Handle pointer type compatibility
+- [x] Function/procedure validation:
+  - [x] Check parameter count and types
+  - [x] Validate formal vs actual parameter compatibility
+  - [x] Check pass-by-value vs pass-by-reference
+  - [x] Validate forward declarations
+  - [x] Check for undefined functions
+- [x] Variable validation:
+  - [x] Detect undefined variable usage
+  - [x] Detect duplicate declarations in same scope
+  - [x] Validate array bounds (known size)
+  - [x] Check pointer dereference
+- [x] Scope validation:
+  - [x] Enforce Pascal scoping rules
+  - [x] Allow shadowing in nested scopes
+  - [x] Validate label declarations
 
 **Test Files:**
 - All previous files
@@ -151,6 +177,12 @@ Validate semantic correctness: type checking, scope rules, symbol table manageme
 - Single-pass semantic analysis preferred
 - Collect errors but continue analysis (report all errors at once)
 - Assignment compatibility / coercion rules: [SPEC.md §7](SPEC.md#7-type-coercion--assignment-compatibility)
+- "Validate array bounds (known size)" was implemented as a compile-time check that fixed
+  array sizes are positive integer constants — not runtime index-bound checking (SPEC.md
+  §5.1's "index must not exceed the array's real bound" is a dynamic property of a general
+  index expression, which is a codegen-time concern, not a Phase 3 one).
+- `result` used outside a function body, and a bare procedure name used where a value is
+  expected, are both reported as ordinary type errors rather than special-cased.
 
 ---
 
@@ -291,12 +323,14 @@ and `-f`/default `.asm` output only work once Phase 6 exists.
 
 ## Overall Progress
 
-**Current Phase:** Phase 1-2 done, Phase 3 (Semantic Analysis) next
+**Current Phase:** Phase 1-3 done, Phase 4 (Intermediate Code Generation) next
 
-**Blockers:** Symbol table design still needs deciding with the user before Phase 3 starts
-(see `docs/SPEC.md` §4 note and `CLAUDE.md`)
+**Blockers:** None currently.
 
 **Next Steps:**
-1. Decide symbol table design (ask the user first — not specified by the course)
-2. Implement semantic analysis: type checking, scope rules, symbol table (Phase 3)
-3. Wire `main.ml` into the actual CLI contract (SPEC.md §9) once semantic analysis + codegen exist
+1. Design the TAC (three-address code) instruction format (op, arg1, arg2, result) — not
+   specified by the course beyond the output format in SPEC.md §9; our own choice per
+   IMPLEMENTATION.md.
+2. Implement TAC generation from the now-checked AST (Phase 4).
+3. Wire `main.ml` into the actual CLI contract (SPEC.md §9) once codegen exists — it currently
+   still just parses, type-checks, and pretty-prints the AST on success.

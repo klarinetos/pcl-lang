@@ -38,7 +38,17 @@ type expr =
   | EUnop of unop * expr
   | EBinop of binop * expr * expr
 
-type stmt =
+(* [sline] is the source line semantic analysis should blame for any error
+   found within this statement (or, for a compound/nested statement, within
+   it and everything it contains that doesn't have its own finer-grained
+   line) - it is not tracked per-expression, so an error inside a
+   multi-line statement is reported at the statement's own starting line. *)
+type stmt = {
+  sline : int;
+  sdesc : stmt_desc;
+}
+
+and stmt_desc =
   | SEmpty
   | SAssign of expr * expr
   | SBlock of stmt list
@@ -58,14 +68,24 @@ type param = {
 }
 
 type header = {
+  hline : int;
   hname : string;
   hparams : param list;
   hret : typ option;  (* None = procedure, Some t = function returning t *)
 }
 
+(* One "var" keyword covers one or more name-list : type groups, each on
+   its own line - track the line per group (not per LVar) so a duplicate-
+   declaration or bad-array-size error can point at the specific group. *)
+type var_group = {
+  vline : int;
+  vnames : string list;
+  vtyp : typ;
+}
+
 type local =
-  | LVar of (string list * typ) list  (* one "var" keyword, one or more name-list : type groups *)
-  | LLabel of string list
+  | LVar of var_group list
+  | LLabel of int * string list
   | LSub of subprogram
   | LForward of header
 

@@ -84,7 +84,7 @@ let escape = '\\' ('n' | 't' | 'r' | '0' | '\\' | '\'' | '"')
 
 rule token = parse
   | [' ' '\t' '\r']                          { token lexbuf }
-  | '\n'                                      { incr line; token lexbuf }
+  | '\n'                                      { incr line; Lexing.new_line lexbuf; token lexbuf }
   | "(*"                                      { comment lexbuf; token lexbuf }
   | id as s
       { match Hashtbl.find_opt keyword_table s with
@@ -123,7 +123,7 @@ rule token = parse
 
 and comment = parse
   | "*)"    { () }
-  | '\n'    { incr line; comment lexbuf }
+  | '\n'    { incr line; Lexing.new_line lexbuf; comment lexbuf }
   | eof     { error "unterminated comment" }
   | _       { comment lexbuf }
 
